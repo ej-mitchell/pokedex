@@ -1,9 +1,11 @@
-module Main exposing (Model, Msg(..), init, main, subscriptions, update, view, viewLink)
+module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
+import Http
 import Url
 
 
@@ -13,13 +15,11 @@ import Url
 
 main : Program () Model Msg
 main =
-    Browser.application
+    Browser.element
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
-        , onUrlChange = UrlChanged
-        , onUrlRequest = LinkClicked
         }
 
 
@@ -27,15 +27,18 @@ main =
 -- MODEL
 
 
-type alias Model =
-    { key : Nav.Key
-    , url : Url.Url
-    }
+type Model
+    = Failure
+    | Start
+    | Loading
+    | Success String
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
-    ( Model key url, Cmd.none )
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( Start
+    , Cmd.none
+    )
 
 
 
@@ -43,25 +46,28 @@ init flags url key =
 
 
 type Msg
-    = LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
+    = RandomButtonClicked
+    | RandomPokemonResponse (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        LinkClicked urlRequest ->
-            case urlRequest of
-                Browser.Internal url ->
-                    ( model, Nav.pushUrl model.key (Url.toString url) )
-
-                Browser.External href ->
-                    ( model, Nav.load href )
-
-        UrlChanged url ->
-            ( { model | url = url }
-            , Cmd.none
+        RandomButtonClicked ->
+            ( Loading
+            , Http.get
+                { url = "https://pokeapi.co/api/v2/pokemon/ditto/"
+                , expect = Http.expectString RandomPokemonResponse
+                }
             )
+
+        RandomPokemonResponse result ->
+            case result of
+                Ok fullText ->
+                    ( Success fullText, Cmd.none )
+
+                Err _ ->
+                    ( Failure, Cmd.none )
 
 
 
@@ -77,18 +83,22 @@ subscriptions _ =
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
+view : Model -> Html Msg
 view model =
-    { title = "Pokédex"
-    , body =
-        [ text "Search for a Pokémon:"
-        , b [] [ text (Url.toString model.url) ]
-        , ul []
-            [ viewLink "/random" ]
-        ]
-    }
+    case model of
+        Failure ->
+            text "I was unable to load your book."
 
+        Start ->
+            div []
+                [ text "Search for a Pokémon:"
+                , button [ onClick RandomButtonClicked ]
+                    [ text "Random Pokemon"
+                    ]
+                ]
 
-viewLink : String -> Html msg
-viewLink path =
-    li [] [ a [ href path ] [ text path ] ]
+        Loading ->
+            text "Searching for your perfect Pokemon..."
+
+        Success fullText ->
+            pre [] [ text fullText ]
