@@ -1,0 +1,10 @@
+.cache/
+dist/
+elm-stuff/
+logs
+nginx.conf
+nginx.pid
+node_modules/
+*.log
+.tool-versions
+yarn.lock
