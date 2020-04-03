@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
+import Random
 import Url
 
 
@@ -47,6 +48,7 @@ init _ =
 
 type Msg
     = RandomButtonClicked
+    | ReceiveRandomId Int
     | RandomPokemonResponse (Result Http.Error String)
 
 
@@ -55,11 +57,11 @@ update msg model =
     case msg of
         RandomButtonClicked ->
             ( Loading
-            , Http.get
-                { url = "https://pokeapi.co/api/v2/pokemon/ditto/"
-                , expect = Http.expectString RandomPokemonResponse
-                }
+            , Random.generate ReceiveRandomId generateRandomNumber
             )
+
+        ReceiveRandomId id ->
+            buildRandomPokemonResponse id
 
         RandomPokemonResponse result ->
             case result of
@@ -68,6 +70,21 @@ update msg model =
 
                 Err _ ->
                     ( Failure, Cmd.none )
+
+
+buildRandomPokemonResponse : Int -> ( Model, Cmd Msg )
+buildRandomPokemonResponse randNumber =
+    ( Loading
+    , Http.get
+        { url = "https://pokeapi.co/api/v2/pokemon/" ++ String.fromInt randNumber
+        , expect = Http.expectString RandomPokemonResponse
+        }
+    )
+
+
+generateRandomNumber : Random.Generator Int
+generateRandomNumber =
+    Random.int 1 150
 
 
 
@@ -87,18 +104,44 @@ view : Model -> Html Msg
 view model =
     case model of
         Failure ->
-            text "I was unable to load your book."
+            failurePageView
 
         Start ->
-            div []
-                [ text "Search for a Pokémon:"
-                , button [ onClick RandomButtonClicked ]
-                    [ text "Random Pokemon"
-                    ]
-                ]
+            defaultPageView
 
         Loading ->
-            text "Searching for your perfect Pokemon..."
+            loadingPageView
 
         Success fullText ->
-            pre [] [ text fullText ]
+            successPageView fullText
+
+
+defaultPageView : Html Msg
+defaultPageView =
+    div []
+        [ text "Search for a Pokémon:"
+        , button [ onClick RandomButtonClicked ]
+            [ text "Random Pokemon"
+            ]
+        ]
+
+
+loadingPageView : Html Msg
+loadingPageView =
+    div []
+        [ text "Searching for your perfect Pokemon..."
+        , defaultPageView
+        ]
+
+
+failurePageView : Html Msg
+failurePageView =
+    div []
+        [ text "I was unable to load your Pokemon! Please try again!"
+        , defaultPageView
+        ]
+
+
+successPageView : String -> Html Msg
+successPageView fullText =
+    div [] [ text "Pokemon found!", defaultPageView, text fullText ]
