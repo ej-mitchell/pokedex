@@ -1,13 +1,12 @@
 module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
 import Browser
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
+import Json.Decode exposing (Decoder, field, string)
 import Random
-import Url
 
 
 
@@ -77,7 +76,7 @@ buildRandomPokemonResponse randNumber =
     ( Loading
     , Http.get
         { url = "https://pokeapi.co/api/v2/pokemon/" ++ String.fromInt randNumber
-        , expect = Http.expectString RandomPokemonResponse
+        , expect = Http.expectJson RandomPokemonResponse pokeDecoder
         }
     )
 
@@ -85,6 +84,15 @@ buildRandomPokemonResponse randNumber =
 generateRandomNumber : Random.Generator Int
 generateRandomNumber =
     Random.int 1 150
+
+
+
+-- JSON DECODERS
+
+
+pokeDecoder : Decoder String
+pokeDecoder =
+    field "species" (field "name" string)
 
 
 
