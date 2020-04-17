@@ -32,6 +32,7 @@ type Model
     | Start
     | Loading
     | Success String
+    | SuccessWithPokemon Pokemon
 
 
 init : () -> ( Model, Cmd Msg )
@@ -49,6 +50,7 @@ type Msg
     = RandomButtonClicked
     | ReceiveRandomId Int
     | RandomPokemonResponse (Result Http.Error String)
+    | DecodePokemonResult (Result D.Error Pokemon)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,7 +67,19 @@ update msg model =
         RandomPokemonResponse result ->
             case result of
                 Ok fullText ->
-                    ( Success fullText, Cmd.none )
+                    ( fullText
+                        |> decodePokemon
+                        |> DecodePokemonResult
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    ( Failure, Cmd.none )
+
+        DecodePokemonResult result ->
+            case result of
+                Ok pokemon ->
+                    ( SuccessWithPokemon pokemon, Cmd.none )
 
                 Err _ ->
                     ( Failure, Cmd.none )
@@ -76,7 +90,7 @@ buildRandomPokemonResponse randNumber =
     ( Loading
     , Http.get
         { url = "https://pokeapi.co/api/v2/pokemon/" ++ String.fromInt randNumber
-        , expect = Http.expectJson RandomPokemonResponse pokeDecoder
+        , expect = Http.expectString RandomPokemonResponse
         }
     )
 
@@ -84,6 +98,11 @@ buildRandomPokemonResponse randNumber =
 generateRandomNumber : Random.Generator Int
 generateRandomNumber =
     Random.int 1 150
+
+
+decodePokemon : String -> Result D.Error Pokemon
+decodePokemon text =
+    D.decodeString pokeDecoder text
 
 
 
@@ -103,18 +122,22 @@ type alias Pokemon =
 
 pokeDecoder : D.Decoder Pokemon
 pokeDecoder =
-    D.map3 Pokemon
-        (D.field "species" (D.field "name" D.string))
-        (D.field "type" (D.field "type" (D.field "name" (D.list D.string))))
-        (D.field "abilities"
-            (D.field "ability"
-                (D.field "name"
-                    (D.list
-                        D.string
-                    )
-                )
-            )
-        )
+    D.map3 Pokemon nameDecoder typesDecoder abilitiesDecoder
+
+
+nameDecoder : D.Decoder String
+nameDecoder =
+    D.field "species" (D.field "name" D.string)
+
+
+typesDecoder : D.Decoder (List String)
+typesDecoder =
+    D.field "type" (D.field "type" (D.field "name" (D.list D.string)))
+
+
+abilitiesDecoder : D.Decoder (List String)
+abilitiesDecoder =
+    D.field "abilities" (D.field "ability" (D.field "name" (D.list D.string)))
 
 
 
@@ -144,6 +167,9 @@ view model =
 
         Success fullText ->
             successPageView fullText
+
+        SuccessWithPokemon pokemon ->
+            Debug.todo "Write this"
 
 
 defaultPageView : Html Msg
