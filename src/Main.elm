@@ -5,7 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, field, string)
+import Json.Decode as D
 import Random
 
 
@@ -87,12 +87,34 @@ generateRandomNumber =
 
 
 
+-- DATA TYPES
+
+
+type alias Pokemon =
+    { name : String
+    , types : List String
+    , abilities : List String
+    }
+
+
+
 -- JSON DECODERS
 
 
-pokeDecoder : Decoder String
+pokeDecoder : D.Decoder Pokemon
 pokeDecoder =
-    field "species" (field "name" string)
+    D.map3 Pokemon
+        (D.field "species" (D.field "name" D.string))
+        (D.field "type" (D.field "type" (D.field "name" (D.list D.string))))
+        (D.field "abilities"
+            (D.field "ability"
+                (D.field "name"
+                    (D.list
+                        D.string
+                    )
+                )
+            )
+        )
 
 
 
