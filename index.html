@@ -5432,9 +5432,6 @@ var $author$project$Main$Loading = {$: 'Loading'};
 var $author$project$Main$ReceiveRandomId = function (a) {
 	return {$: 'ReceiveRandomId', a: a};
 };
-var $author$project$Main$Success = function (a) {
-	return {$: 'Success', a: a};
-};
 var $author$project$Main$RandomPokemonResponse = function (a) {
 	return {$: 'RandomPokemonResponse', a: a};
 };
@@ -6226,6 +6223,40 @@ var $author$project$Main$buildRandomPokemonResponse = function (randNumber) {
 				url: 'https://pokeapi.co/api/v2/pokemon/' + $elm$core$String$fromInt(randNumber)
 			}));
 };
+var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $author$project$Main$Pokemon = F3(
+	function (name, abilities, moves) {
+		return {abilities: abilities, moves: moves, name: name};
+	});
+var $author$project$Main$Data = F2(
+	function (name, url) {
+		return {name: name, url: url};
+	});
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Main$dataNameDecoder = A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string);
+var $author$project$Main$urlDecoder = A2($elm$json$Json$Decode$field, 'url', $elm$json$Json$Decode$string);
+var $author$project$Main$dataDecoder = A3($elm$json$Json$Decode$map2, $author$project$Main$Data, $author$project$Main$dataNameDecoder, $author$project$Main$urlDecoder);
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $author$project$Main$abilitiesDecoder = A2(
+	$elm$json$Json$Decode$field,
+	'abilities',
+	$elm$json$Json$Decode$list(
+		A2($elm$json$Json$Decode$field, 'ability', $author$project$Main$dataDecoder)));
+var $elm$json$Json$Decode$map3 = _Json_map3;
+var $author$project$Main$movesDecoder = A2(
+	$elm$json$Json$Decode$field,
+	'moves',
+	$elm$json$Json$Decode$list(
+		A2($elm$json$Json$Decode$field, 'move', $author$project$Main$dataDecoder)));
+var $author$project$Main$nameDecoder = A2(
+	$elm$json$Json$Decode$field,
+	'species',
+	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string));
+var $author$project$Main$pokeDecoder = A4($elm$json$Json$Decode$map3, $author$project$Main$Pokemon, $author$project$Main$nameDecoder, $author$project$Main$abilitiesDecoder, $author$project$Main$movesDecoder);
+var $author$project$Main$decodePokemon = function (text) {
+	return A2($elm$json$Json$Decode$decodeString, $author$project$Main$pokeDecoder, text);
+};
 var $elm$random$Random$Generate = function (a) {
 	return {$: 'Generate', a: a};
 };
@@ -6376,6 +6407,19 @@ var $elm$random$Random$int = F2(
 			});
 	});
 var $author$project$Main$generateRandomNumber = A2($elm$random$Random$int, 1, 150);
+var $author$project$Main$SuccessWithPokemon = function (a) {
+	return {$: 'SuccessWithPokemon', a: a};
+};
+var $author$project$Main$pokemonResult = function (result) {
+	if (result.$ === 'Ok') {
+		var pokemon = result.a;
+		return _Utils_Tuple2(
+			$author$project$Main$SuccessWithPokemon(pokemon),
+			$elm$core$Platform$Cmd$none);
+	} else {
+		return _Utils_Tuple2($author$project$Main$Failure, $elm$core$Platform$Cmd$none);
+	}
+};
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -6390,9 +6434,8 @@ var $author$project$Main$update = F2(
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var fullText = result.a;
-					return _Utils_Tuple2(
-						$author$project$Main$Success(fullText),
-						$elm$core$Platform$Cmd$none);
+					return $author$project$Main$pokemonResult(
+						$author$project$Main$decodePokemon(fullText));
 				} else {
 					return _Utils_Tuple2($author$project$Main$Failure, $elm$core$Platform$Cmd$none);
 				}
@@ -6453,7 +6496,15 @@ var $author$project$Main$loadingPageView = A2(
 			$elm$html$Html$text('Searching for your perfect Pokemon...'),
 			$author$project$Main$defaultPageView
 		]));
-var $author$project$Main$successPageView = function (fullText) {
+var $author$project$Main$getNamesFromData = function (data) {
+	return A2(
+		$elm$core$List$map,
+		function (b) {
+			return b.name;
+		},
+		data);
+};
+var $author$project$Main$successPageView = function (pokemon) {
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
@@ -6461,7 +6512,38 @@ var $author$project$Main$successPageView = function (fullText) {
 			[
 				$elm$html$Html$text('Pokemon found!'),
 				$author$project$Main$defaultPageView,
-				$elm$html$Html$text(fullText)
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Name')
+					])),
+				$elm$html$Html$text(pokemon.name),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Abilities')
+					])),
+				$elm$html$Html$text(
+				A2(
+					$elm$core$String$join,
+					', ',
+					$author$project$Main$getNamesFromData(pokemon.abilities))),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Moves')
+					])),
+				$elm$html$Html$text(
+				A2(
+					$elm$core$String$join,
+					', ',
+					$author$project$Main$getNamesFromData(pokemon.moves)))
 			]));
 };
 var $author$project$Main$view = function (model) {
@@ -6473,8 +6555,8 @@ var $author$project$Main$view = function (model) {
 		case 'Loading':
 			return $author$project$Main$loadingPageView;
 		default:
-			var fullText = model.a;
-			return $author$project$Main$successPageView(fullText);
+			var pokemon = model.a;
+			return $author$project$Main$successPageView(pokemon);
 	}
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

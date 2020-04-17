@@ -31,7 +31,6 @@ type Model
     = Failure
     | Start
     | Loading
-    | Success String
     | SuccessWithPokemon Pokemon
 
 
@@ -50,7 +49,6 @@ type Msg
     = RandomButtonClicked
     | ReceiveRandomId Int
     | RandomPokemonResponse (Result Http.Error String)
-    | DecodePokemonResult (Result D.Error Pokemon)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -67,19 +65,9 @@ update msg model =
         RandomPokemonResponse result ->
             case result of
                 Ok fullText ->
-                    ( fullText
+                    fullText
                         |> decodePokemon
-                        |> DecodePokemonResult
-                    , Cmd.none
-                    )
-
-                Err _ ->
-                    ( Failure, Cmd.none )
-
-        DecodePokemonResult result ->
-            case result of
-                Ok pokemon ->
-                    ( SuccessWithPokemon pokemon, Cmd.none )
+                        |> pokemonResult
 
                 Err _ ->
                     ( Failure, Cmd.none )
@@ -105,14 +93,30 @@ decodePokemon text =
     D.decodeString pokeDecoder text
 
 
+pokemonResult : Result D.Error Pokemon -> ( Model, Cmd Msg )
+pokemonResult result =
+    case result of
+        Ok pokemon ->
+            ( SuccessWithPokemon pokemon, Cmd.none )
+
+        Err _ ->
+            ( Failure, Cmd.none )
+
+
 
 -- DATA TYPES
 
 
 type alias Pokemon =
     { name : String
-    , types : List String
-    , abilities : List String
+    , abilities : List Data
+    , moves : List Data
+    }
+
+
+type alias Data =
+    { name : String
+    , url : String
     }
 
 
@@ -122,7 +126,7 @@ type alias Pokemon =
 
 pokeDecoder : D.Decoder Pokemon
 pokeDecoder =
-    D.map3 Pokemon nameDecoder typesDecoder abilitiesDecoder
+    D.map3 Pokemon nameDecoder abilitiesDecoder movesDecoder
 
 
 nameDecoder : D.Decoder String
@@ -130,14 +134,29 @@ nameDecoder =
     D.field "species" (D.field "name" D.string)
 
 
-typesDecoder : D.Decoder (List String)
-typesDecoder =
-    D.field "type" (D.field "type" (D.field "name" (D.list D.string)))
-
-
-abilitiesDecoder : D.Decoder (List String)
+abilitiesDecoder : D.Decoder (List Data)
 abilitiesDecoder =
-    D.field "abilities" (D.field "ability" (D.field "name" (D.list D.string)))
+    D.field "abilities" (D.list (D.field "ability" dataDecoder))
+
+
+movesDecoder : D.Decoder (List Data)
+movesDecoder =
+    D.field "moves" (D.list (D.field "move" dataDecoder))
+
+
+dataDecoder : D.Decoder Data
+dataDecoder =
+    D.map2 Data dataNameDecoder urlDecoder
+
+
+dataNameDecoder : D.Decoder String
+dataNameDecoder =
+    D.field "name" D.string
+
+
+urlDecoder : D.Decoder String
+urlDecoder =
+    D.field "url" D.string
 
 
 
@@ -165,11 +184,8 @@ view model =
         Loading ->
             loadingPageView
 
-        Success fullText ->
-            successPageView fullText
-
         SuccessWithPokemon pokemon ->
-            Debug.todo "Write this"
+            successPageView pokemon
 
 
 defaultPageView : Html Msg
@@ -198,6 +214,21 @@ failurePageView =
         ]
 
 
-successPageView : String -> Html Msg
-successPageView fullText =
-    div [] [ text "Pokemon found!", defaultPageView, text fullText ]
+successPageView : Pokemon -> Html Msg
+successPageView pokemon =
+    div []
+        [ text "Pokemon found!"
+        , defaultPageView
+        , div [] [ text "Name" ]
+        , text pokemon.name
+        , div [] [ text "Abilities" ]
+        , text
+            (String.join ", " (getNamesFromData pokemon.abilities))
+        , div [] [ text "Moves" ]
+        , text (String.join ", " (getNamesFromData pokemon.moves))
+        ]
+
+
+getNamesFromData : List Data -> List String
+getNamesFromData data =
+    List.map (\b -> b.name) data
