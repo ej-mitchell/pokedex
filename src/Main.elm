@@ -3,7 +3,7 @@ module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as D
 import Random
@@ -48,7 +48,8 @@ init _ =
 type Msg
     = RandomButtonClicked
     | ReceiveRandomId Int
-    | RandomPokemonResponse (Result Http.Error String)
+    | ReceivePokemonResponse (Result Http.Error String)
+    | UserTypedInName String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -62,7 +63,7 @@ update msg model =
         ReceiveRandomId id ->
             buildRandomPokemonResponse id
 
-        RandomPokemonResponse result ->
+        ReceivePokemonResponse result ->
             case result of
                 Ok fullText ->
                     fullText
@@ -72,13 +73,26 @@ update msg model =
                 Err _ ->
                     ( Failure, Cmd.none )
 
+        UserTypedInName name ->
+            buildSearchedPokemonResponse name
+
 
 buildRandomPokemonResponse : Int -> ( Model, Cmd Msg )
 buildRandomPokemonResponse randNumber =
     ( Loading
     , Http.get
         { url = "https://pokeapi.co/api/v2/pokemon/" ++ String.fromInt randNumber
-        , expect = Http.expectString RandomPokemonResponse
+        , expect = Http.expectString ReceivePokemonResponse
+        }
+    )
+
+
+buildSearchedPokemonResponse : String -> ( Model, Cmd Msg )
+buildSearchedPokemonResponse name =
+    ( Loading
+    , Http.get
+        { url = "https://pokeapi.co/api/v2/pokemon/" ++ name
+        , expect = Http.expectString ReceivePokemonResponse
         }
     )
 
@@ -192,8 +206,24 @@ defaultPageView : Html Msg
 defaultPageView =
     div []
         [ text "Search for a Pokémon:"
+        , search ""
         , button [ onClick RandomButtonClicked ]
             [ text "Random Pokemon"
+            ]
+        ]
+
+
+search : String -> Html Msg
+search query =
+    div [ class "lines__header-wrapper" ]
+        [ div [ class "search__wrapper" ]
+            [ input
+                [ placeholder "Search for a Pokemon"
+                , type_ "search"
+                , value query
+                , onInput UserTypedInName
+                ]
+                []
             ]
         ]
 
