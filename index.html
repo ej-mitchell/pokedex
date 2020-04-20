@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Main</title>
-  <style>body { padding: 0; margin: 0; }</style>
+  <link rel="stylesheet" type="text/css" href="/src/css/app.scss">
 </head>
 
 <body>
@@ -6604,36 +6604,54 @@ var $author$project$Main$successPageView = function (pokemon) {
 				$author$project$Main$defaultPageView,
 				A2(
 				$elm$html$Html$div,
-				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Name')
-					])),
-				$elm$html$Html$text(pokemon.name),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
+						$elm$html$Html$Attributes$class('response')
+					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Abilities')
-					])),
-				$elm$html$Html$text(
-				A2(
-					$elm$core$String$join,
-					', ',
-					$author$project$Main$getNamesFromData(pokemon.abilities))),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Moves')
-					])),
-				$elm$html$Html$text(
-				A2(
-					$elm$core$String$join,
-					', ',
-					$author$project$Main$getNamesFromData(pokemon.moves)))
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('heading')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Name')
+							])),
+						$elm$html$Html$text(pokemon.name),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('heading')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Abilities')
+							])),
+						$elm$html$Html$text(
+						A2(
+							$elm$core$String$join,
+							', ',
+							$author$project$Main$getNamesFromData(pokemon.abilities))),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('heading')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Moves')
+							])),
+						$elm$html$Html$text(
+						A2(
+							$elm$core$String$join,
+							', ',
+							$author$project$Main$getNamesFromData(pokemon.moves)))
+					]))
 			]));
 };
 var $author$project$Main$view = function (model) {

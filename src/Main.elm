@@ -249,13 +249,15 @@ successPageView pokemon =
     div []
         [ text "Pokemon found!"
         , defaultPageView
-        , div [] [ text "Name" ]
-        , text pokemon.name
-        , div [] [ text "Abilities" ]
-        , text
-            (String.join ", " (getNamesFromData pokemon.abilities))
-        , div [] [ text "Moves" ]
-        , text (String.join ", " (getNamesFromData pokemon.moves))
+        , div [ class "response" ]
+            [ div [ class "heading" ] [ text "Name" ]
+            , text pokemon.name
+            , div [ class "heading" ] [ text "Abilities" ]
+            , text
+                (String.join ", " (getNamesFromData pokemon.abilities))
+            , div [ class "heading" ] [ text "Moves" ]
+            , text (String.join ", " (getNamesFromData pokemon.moves))
+            ]
         ]
 
 
