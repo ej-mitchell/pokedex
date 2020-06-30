@@ -48,7 +48,7 @@ init _ =
 type Msg
     = RandomButtonClicked
     | ReceiveRandomId Int
-    | ReceivePokemonResponse (Result Http.Error String)
+    | ReceivePokemonResponse (Result Http.Error Pokemon)
     | UserTypedInName String
 
 
@@ -61,40 +61,34 @@ update msg model =
             )
 
         ReceiveRandomId id ->
-            buildRandomPokemonResponse id
+            ( Loading, pokemonRequestById id )
 
         ReceivePokemonResponse result ->
             case result of
-                Ok fullText ->
-                    fullText
-                        |> decodePokemon
-                        |> pokemonResult
+                Ok pokemon ->
+                    ( SuccessWithPokemon pokemon, Cmd.none )
 
                 Err _ ->
                     ( Failure, Cmd.none )
 
         UserTypedInName name ->
-            buildSearchedPokemonResponse name
+            ( Loading, pokemonRequestByName name )
 
 
-buildRandomPokemonResponse : Int -> ( Model, Cmd Msg )
-buildRandomPokemonResponse randNumber =
-    ( Loading
-    , Http.get
+pokemonRequestById : Int -> Cmd Msg
+pokemonRequestById randNumber =
+    Http.get
         { url = "https://pokeapi.co/api/v2/pokemon/" ++ String.fromInt randNumber
-        , expect = Http.expectString ReceivePokemonResponse
+        , expect = Http.expectJson ReceivePokemonResponse pokeDecoder
         }
-    )
 
 
-buildSearchedPokemonResponse : String -> ( Model, Cmd Msg )
-buildSearchedPokemonResponse name =
-    ( Loading
-    , Http.get
+pokemonRequestByName : String -> Cmd Msg
+pokemonRequestByName name =
+    Http.get
         { url = "https://pokeapi.co/api/v2/pokemon/" ++ name
-        , expect = Http.expectString ReceivePokemonResponse
+        , expect = Http.expectJson ReceivePokemonResponse pokeDecoder
         }
-    )
 
 
 generateRandomNumber : Random.Generator Int
